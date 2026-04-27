@@ -117,44 +117,51 @@ export default function LojaPage() {
     setCarrinho((atual) => atual.filter((item) => item.id !== id));
   }
 
-  async function buscarCep() {
-    const cepLimpo = cep.replace(/\D/g, "");
+async function buscarCep() {
+ const cepLimpo = cep.replace(/\D/g,"");
 
-    setResultado(null);
-    setEndereco(null);
+ setEndereco(null);
+ setResultado(null);
 
-    if (cepLimpo.length !== 8) {
-      setErro("Digite um CEP válido com 8 números.");
+ if(cepLimpo.length !== 8){
+   setErro("Digite um CEP válido.");
+   return;
+ }
+
+ try{
+   setLoadingCep(true);
+   setErro("");
+
+   const res = await fetch("/api/cep",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        cep:cepLimpo
+      })
+   });
+
+   const data = await res.json();
+
+   if(!res.ok){
+      setErro(data.erro);
       return;
-    }
+   }
 
-    try {
-      setLoadingCep(true);
-      setErro("");
+   setEndereco({
+      rua:data.rua,
+      bairro:data.bairro,
+      cidade:data.cidade,
+      estado:data.estado
+   });
 
-      const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-      const data = await response.json();
-
-      if (data.erro) {
-        setErro("CEP não encontrado.");
-        return;
-      }
-
-      setEndereco({
-        rua: data.logradouro || "Rua não informada",
-        bairro: data.bairro || "Bairro não informado",
-        cidade: data.localidade || "",
-        estado: data.uf || "",
-      });
-
-      setCep(cepLimpo);
-    } catch {
-      setErro("Erro ao buscar endereço pelo CEP.");
-    } finally {
-      setLoadingCep(false);
-    }
-  }
-
+ } catch {
+   setErro("Erro ao buscar endereço.");
+ } finally{
+   setLoadingCep(false);
+ }
+}
   async function calcularFrete() {
     try {
       setLoading(true);
